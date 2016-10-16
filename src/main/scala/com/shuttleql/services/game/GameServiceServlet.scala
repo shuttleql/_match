@@ -3,7 +3,7 @@ package com.shuttleql.services.game
 import com.shuttleql.services.game.matchmaking.MatchMaker
 import org.scalatra.json._
 import org.json4s.{DefaultFormats, Formats}
-import org.scalatra.Ok
+import org.scalatra.{BadRequest, Ok}
 
 class GameServiceServlet extends GameServiceStack with JacksonJsonSupport {
 
@@ -13,18 +13,21 @@ class GameServiceServlet extends GameServiceStack with JacksonJsonSupport {
     contentType = formats("json")
   }
 
-  get("/matches") {
+  get("/") {
     Ok(MatchMaker.getMatches)
   }
 
-  post("/matches/start") {
-    MatchMaker.startMatchGeneration
-    Ok()
-  }
-
-  post("/matches/stop") {
-    MatchMaker.stopMatchGeneration
-    Ok()
+  put("/status/:status") {
+    params.get("status") map {
+      case "start" =>
+        MatchMaker.startMatchGeneration
+        Ok()
+      case "stop" =>
+        MatchMaker.stopMatchGeneration
+        Ok()
+      case badStatus =>
+        BadRequest("Invalid status type: " + badStatus)
+    }
   }
 
 }
