@@ -44,6 +44,7 @@ object MatchMaker {
   def stopMatchGeneration: Unit = {
     matchMakingTaskHandler.map(_.cancel(true))
     matchMakingTaskHandler = None
+    matches = mutable.MutableList()
   }
 
   /**

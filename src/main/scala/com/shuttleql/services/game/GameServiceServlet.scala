@@ -1,6 +1,7 @@
 package com.shuttleql.services.game
 
 import com.shuttleql.services.game.matchmaking.MatchMaker
+import org.json4s.JsonAST.JObject
 import org.scalatra.json._
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.{BadRequest, Ok}
@@ -18,13 +19,13 @@ class GameServiceServlet extends GameServiceStack with JacksonJsonSupport {
   }
 
   put("/status/:status") {
-    params.get("status") map {
+    params("status") match {
       case "start" =>
         MatchMaker.startMatchGeneration
-        Ok()
+        Ok(JObject(obj = List()))
       case "stop" =>
         MatchMaker.stopMatchGeneration
-        Ok()
+        Ok(JObject(obj = List()))
       case badStatus =>
         BadRequest("Invalid status type: " + badStatus)
     }
