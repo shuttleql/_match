@@ -1,0 +1,53 @@
+{
+	"variables": [],
+	"info": {
+		"name": "ShuttleQL Game Service",
+		"_postman_id": "8591e60e-628d-9178-87e6-59dd997481ad",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "http://localhost:8082/matches",
+			"request": {
+				"url": "http://localhost:8082/",
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:8082/matches/start",
+			"request": {
+				"url": "http://localhost:8082/status/start",
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:8082/matches/stop",
+			"request": {
+				"url": "http://localhost:8082/status/stop",
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"description": ""
+			},
+			"response": []
+		}
+	]
+}
