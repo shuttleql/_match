@@ -3,9 +3,10 @@ package com.shuttleql.services.game.matchmaking
 import java.util.UUID
 import java.util.concurrent.{ScheduledFuture, ScheduledThreadPoolExecutor, TimeUnit}
 
-import com.shuttleql.services.game.data.Match
+import com.shuttleql.services.game.data.{Match, Player}
 
 import scala.collection.mutable
+import scala.util.Random
 
 
 /**
@@ -22,10 +23,10 @@ object MatchMaker {
   }
   var matchMakingTaskHandler: Option[ScheduledFuture[_]] = None
 
-  var matches: mutable.MutableList[Match] = mutable.MutableList()
+  var matches: List[Match] = List()
 
   def getMatches: List[Match] = {
-    matches.toList
+    matches
   }
 
   def startMatchGeneration: Unit = {
@@ -44,7 +45,7 @@ object MatchMaker {
   def stopMatchGeneration: Unit = {
     matchMakingTaskHandler.map(_.cancel(true))
     matchMakingTaskHandler = None
-    matches = mutable.MutableList()
+    matches = List()
   }
 
   /**
@@ -53,18 +54,30 @@ object MatchMaker {
   def generateMatches: Unit = {
     println("Let's Generate")
 
-    matches = mutable.MutableList()
+    val firstNames = List("David", "Clement", "Jason", "Tony", "Zach", "Daniel", "Andrew", "Dan", "Chong Wei")
+    val lastNames = List("Dong", "Hoang", "Fang", "Lu", "Li", "Chen", "Zhou", "Lin", "Lee")
 
-    for ( n <- 1 to 8) {
-      if ( n % 4 != 0 ) {
-        matches += Match(
-          team1 = List(UUID.randomUUID().toString, UUID.randomUUID().toString),
-          team2 = List(UUID.randomUUID().toString, UUID.randomUUID().toString)
+    val players = List.range(1, 29).map { playerId =>
+      Player(
+        id = playerId,
+        name = firstNames(Random.nextInt(firstNames.size)) + " " + lastNames(Random.nextInt(lastNames.size))
+      )
+    }
+
+    matches = List.range(1, 9).map { cid =>
+      if (cid < 7) {
+        Match(
+          team1 = List(players((cid - 1)*4), players((cid - 1)*4+1)),
+          team2 = List(players((cid - 1)*4+2), players((cid - 1)*4+3)),
+          courtName = "Court " + cid,
+          courtId = cid
         )
       } else {
-        matches += Match(
-          team1 = List(UUID.randomUUID().toString),
-          team2 = List(UUID.randomUUID().toString)
+        Match(
+          team1 = List(players((cid - 7)*2+24)),
+          team2 = List(players((cid - 7)*2+25)),
+          courtName = "Court " + cid,
+          courtId = cid
         )
       }
     }

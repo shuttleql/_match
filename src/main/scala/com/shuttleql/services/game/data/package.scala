@@ -5,12 +5,18 @@ package com.shuttleql.services.game
   */
 package object data {
 
-  type UserId = String
-  type Team = List[UserId]
+  type Team = List[Player]
+
+  case class Player(
+     id: Int,
+     name: String
+  )
 
   case class Match(
     team1: Team,
-    team2: Team
+    team2: Team,
+    courtName: String,
+    courtId: Int
   )
 
 }
