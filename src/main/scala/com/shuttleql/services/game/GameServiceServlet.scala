@@ -27,7 +27,7 @@ class GameServiceServlet extends GameServiceStack with JacksonJsonSupport {
         MatchMaker.stopMatchGeneration
         Ok(JObject(obj = List()))
       case badStatus =>
-        BadRequest("Invalid status type: " + badStatus)
+        BadRequest(reason = "Invalid status type: " + badStatus)
     }
   }
 
