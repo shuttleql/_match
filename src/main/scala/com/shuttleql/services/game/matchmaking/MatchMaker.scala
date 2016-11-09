@@ -1,86 +1,113 @@
 package com.shuttleql.services.game.matchmaking
 
-import java.util.UUID
 import java.util.concurrent.{ScheduledFuture, ScheduledThreadPoolExecutor, TimeUnit}
 
-import com.shuttleql.services.game.data.{Match, Player}
+import com.shuttleql.services.game.data.{Match, MatchType, Player}
+import com.typesafe.config.ConfigFactory
 
-import scala.collection.mutable
 import scala.util.Random
-
+import scala.collection.JavaConversions._
+import scala.collection.mutable
 
 /**
   * Created by jasonf7 on 2016-10-15.
   */
 object MatchMaker {
 
+  val clubConfig = ConfigFactory.load().getConfig("clubConf")
+  val rotationTime = clubConfig.getDuration("rotationTime")
+  val numCourts = clubConfig.getInt("numCourts")
+  val courtTypes = clubConfig.getStringList("courtType").map { s => MatchType.withName(s) }.toList
+
   val matchScheduler = new ScheduledThreadPoolExecutor(1)
   val matchMakingTask = new Runnable {
     override def run(): Unit = {
-      generateMatches
+      generateMatches()
       // TODO: call notification service
     }
   }
   var matchMakingTaskHandler: Option[ScheduledFuture[_]] = None
 
   var matches: List[Match] = List()
+  var playerQ: mutable.Queue[Player] = mutable.Queue()
 
   def getMatches: List[Match] = {
     matches
   }
 
-  def startMatchGeneration: Unit = {
+  def startMatchGeneration(players: List[Player]): Unit = {
     if ( matchMakingTaskHandler.isDefined ) {
-      stopMatchGeneration
+      stopMatchGeneration()
     }
 
-    matchMakingTaskHandler = Option(matchScheduler.scheduleAtFixedRate(
-      matchMakingTask,
-      0,
-      5,
-      TimeUnit.SECONDS
-    ))
+    playerQ ++= players
+
+    matchMakingTaskHandler = Option(
+      matchScheduler.scheduleAtFixedRate(
+        matchMakingTask,
+        3,
+        rotationTime.getSeconds,
+        TimeUnit.SECONDS
+      )
+    )
   }
 
-  def stopMatchGeneration: Unit = {
+  def stopMatchGeneration(): Unit = {
     matchMakingTaskHandler.map(_.cancel(true))
     matchMakingTaskHandler = None
     matches = List()
+    playerQ.clear()
+  }
+
+  def checkInPlayer(player: Player): Unit = {
+    playerQ += player
+  }
+
+  def checkOutPlayer(playerId: Int): Unit = {
+    playerQ = playerQ.filterNot(player => player.id == playerId)
   }
 
   /**
     * TODO: Shouldn't return random matches
     */
-  def generateMatches: Unit = {
+  def generateMatches(): Unit = {
     println("Let's Generate")
 
-    val firstNames = List("David", "Clement", "Jason", "Tony", "Zach", "Daniel", "Andrew", "Dan", "Chong Wei")
-    val lastNames = List("Dong", "Hoang", "Fang", "Lu", "Li", "Chen", "Zhou", "Lin", "Lee")
+    // 1. Enqueue current players back into queue
+    val previousPlayers = matches.flatMap { m => m.team1 ++ m.team2 }
+    playerQ ++= previousPlayers
 
-    val players = List.range(1, 29).map { playerId =>
-      Player(
-        id = playerId,
-        name = firstNames(Random.nextInt(firstNames.size)) + " " + lastNames(Random.nextInt(lastNames.size))
-      )
-    }
+    // 2. Dequeue players
+    val currentPlayers = for (i <- 1 to numCourts * 4) yield playerQ.dequeue()
 
-    matches = List.range(1, 9).map { cid =>
-      if (cid < 7) {
-        Match(
-          team1 = List(players((cid - 1)*4), players((cid - 1)*4+1)),
-          team2 = List(players((cid - 1)*4+2), players((cid - 1)*4+3)),
-          courtName = "Court " + cid,
-          courtId = cid
-        )
-      } else {
-        Match(
-          team1 = List(players((cid - 7)*2+24)),
-          team2 = List(players((cid - 7)*2+25)),
-          courtName = "Court " + cid,
-          courtId = cid
-        )
-      }
-    }
+    // 3. Shuffle players by level
+    val randomPlayerList = currentPlayers
+      .groupBy(_.level)
+      .map { case (level, players) =>
+        (level, Random.shuffle(players))
+      }.values.flatten
+
+    // 4. Find random split index
+    val randInd = Random.nextInt(numCourts) * 4
+
+    // 5. create teams after splitting by index
+    val (playerList1, playerList2) = randomPlayerList.splitAt(randInd)
+    matches = (playerList1 ++ playerList2)
+        .grouped(4)
+        .map { players => players.splitAt(2) }
+        .zipWithIndex
+        .map { case ((team1, team2), ind) =>
+          val courtId = ind + 1
+          Match(
+            team1 = team1.toList,
+            team2 = team2.toList,
+            courtName = "Court " + courtId,
+            courtId = courtId
+          )
+        }.toList
+
+    println("PLAYERQ")
+    playerQ.foreach(println)
   }
 
 }
