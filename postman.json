@@ -26,10 +26,16 @@
 			"request": {
 				"url": "http://localhost:8082/status/start",
 				"method": "PUT",
-				"header": [],
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
 				"body": {
-					"mode": "formdata",
-					"formdata": []
+					"mode": "raw",
+					"raw": "[\n  {\n    \"id\": 0,\n    \"name\": \"Hallie Garrett\",\n    \"level\": 5,\n    \"preference\": \"Doubles\"\n  },\n  {\n    \"id\": 1,\n    \"name\": \"Tracie Doyle\",\n    \"level\": 4,\n    \"preference\": \"Doubles\"\n  },\n  {\n    \"id\": 2,\n    \"name\": \"Luz Lyons\",\n    \"level\": 3,\n    \"preference\": \"Doubles\"\n  },\n  {\n    \"id\": 3,\n    \"name\": \"Etta Hamilton\",\n    \"level\": 3,\n    \"preference\": \"Doubles\"\n  },\n  {\n    \"id\": 4,\n    \"name\": \"Stewart Santiago\",\n    \"level\": 4,\n    \"preference\": \"Doubles\"\n  },\n  {\n    \"id\": 5,\n    \"name\": \"Janell Miranda\",\n    \"level\": 4,\n    \"preference\": \"Doubles\"\n  },\n  {\n    \"id\": 6,\n    \"name\": \"Laurel Dennis\",\n    \"level\": 5,\n    \"preference\": \"Doubles\"\n  },\n  {\n    \"id\": 7,\n    \"name\": \"Jordan Figueroa\",\n    \"level\": 5,\n    \"preference\": \"Doubles\"\n  },\n  {\n    \"id\": 8,\n    \"name\": \"Lora Barber\",\n    \"level\": 3,\n    \"preference\": \"Doubles\"\n  },\n  {\n    \"id\": 9,\n    \"name\": \"Effie Weber\",\n    \"level\": 4,\n    \"preference\": \"Doubles\"\n  },\n  {\n    \"id\": 10,\n    \"name\": \"Althea Rasmussen\",\n    \"level\": 3,\n    \"preference\": \"Doubles\"\n  },\n  {\n    \"id\": 11,\n    \"name\": \"Betsy Kirby\",\n    \"level\": 1,\n    \"preference\": \"Doubles\"\n  },\n  {\n    \"id\": 12,\n    \"name\": \"Amelia Richard\",\n    \"level\": 2,\n    \"preference\": \"Doubles\"\n  },\n  {\n    \"id\": 13,\n    \"name\": \"Humphrey Hurst\",\n    \"level\": 5,\n    \"preference\": \"Doubles\"\n  },\n  {\n    \"id\": 14,\n    \"name\": \"Christine Navarro\",\n    \"level\": 4,\n    \"preference\": \"Doubles\"\n  },\n  {\n    \"id\": 15,\n    \"name\": \"Justice Vance\",\n    \"level\": 4,\n    \"preference\": \"Doubles\"\n  }\n]"
 				},
 				"description": ""
 			},
@@ -40,6 +46,40 @@
 			"request": {
 				"url": "http://localhost:8082/status/stop",
 				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:8082/checkedinplayers",
+			"request": {
+				"url": "http://localhost:8082/checkedinplayers",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"id\": 69,\n\t\"name\": \"Jason Fang\",\n\t\"level\": 7,\n\t\"preference\": \"Singles\"\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:8082/checkedinplayers/7",
+			"request": {
+				"url": "http://localhost:8082/checkedinplayers/7",
+				"method": "DELETE",
 				"header": [],
 				"body": {
 					"mode": "formdata",
