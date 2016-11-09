@@ -67,12 +67,7 @@ object MatchMaker {
     playerQ = playerQ.filterNot(player => player.id == playerId)
   }
 
-  /**
-    * TODO: Shouldn't return random matches
-    */
   def generateMatches(): Unit = {
-    println("Let's Generate")
-
     // 1. Enqueue current players back into queue
     val previousPlayers = matches.flatMap { m => m.team1 ++ m.team2 }
     playerQ ++= previousPlayers
@@ -106,7 +101,9 @@ object MatchMaker {
           )
         }.toList
 
-    println("PLAYERQ")
+    println("***** MATCHES *****")
+    matches.foreach(println)
+    println("***** PLAYER QUEUE *****")
     playerQ.foreach(println)
   }
 
