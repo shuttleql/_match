@@ -75,7 +75,8 @@ object MatchMaker {
     playerQ ++= previousPlayers
 
     // 2. Dequeue players
-    val currentPlayers = for (i <- 1 to Math.min(playerQ.length, numDoublesCourts * 4 + numSinglesCourts * 2)) yield playerQ.dequeue()
+    val poolCount = Math.min(playerQ.length, numDoublesCourts * 4 + numSinglesCourts * 2)
+    val currentPlayers = for (i <- 1 to poolCount) yield playerQ.dequeue()
 
     // 3. Shuffle players by level
     val randomPlayerList = currentPlayers
@@ -90,8 +91,13 @@ object MatchMaker {
     // 5. Create chunks of size 4 and size 2
     val chunks = randomPlayerList.splitAt(splitIndex) match {
       case (first, second) => {
-        val allChunks = (first.grouped(4).toList ::: second.toList.reverse.grouped(4).toList)
-        val (left, right) = (allChunks.filter(_.size == 4) ::: allChunks.filterNot(_.size == 4).flatten.grouped(4).toList).splitAt(numDoublesCourts)
+        val allChunks = first.grouped(4).toList ::: second.toList.reverse.grouped(4).toList
+        val remainder = allChunks
+          .filterNot(_.size == 4)
+          .flatten
+          .grouped(4)
+          .toList
+        val (left, right) = (allChunks.filter(_.size == 4) ::: remainder).splitAt(numDoublesCourts)
         left ::: right.flatten.grouped(2).toList
       }
     }
