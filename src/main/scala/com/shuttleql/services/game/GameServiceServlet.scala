@@ -48,7 +48,10 @@ class GameServiceServlet extends GameServiceStack with JacksonJsonSupport {
   }
 
   get("/") {
-    Ok(MatchMaker.getMatches)
+    Ok(Map(
+      "matches" -> MatchMaker.getMatches,
+      "queue" -> MatchMaker.getQueue
+    ))
   }
 
   post("/checkedinplayers") {
