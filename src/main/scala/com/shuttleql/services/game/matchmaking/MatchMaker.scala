@@ -18,6 +18,8 @@ object MatchMaker {
   val rotationTime = clubConfig.getDuration("rotationTime")
   val numCourts = clubConfig.getInt("numCourts")
   val courtTypes = clubConfig.getStringList("courtType").map { s => MatchType.withName(s) }.toList
+  val numDoublesCourts = courtTypes.filter(_ == MatchType.Doubles).length
+  val numSinglesCourts = courtTypes.filter(_ == MatchType.Singles).length
 
   val matchScheduler = new ScheduledThreadPoolExecutor(1)
   val matchMakingTask = new Runnable {
@@ -73,7 +75,7 @@ object MatchMaker {
     playerQ ++= previousPlayers
 
     // 2. Dequeue players
-    val currentPlayers = for (i <- 1 to numCourts * 4) yield playerQ.dequeue()
+    val currentPlayers = for (i <- 1 to Math.min(playerQ.length, numDoublesCourts * 4 + numSinglesCourts * 2)) yield playerQ.dequeue()
 
     // 3. Shuffle players by level
     val randomPlayerList = currentPlayers
@@ -83,23 +85,30 @@ object MatchMaker {
       }.values.flatten
 
     // 4. Find random split index
-    val randInd = Random.nextInt(numCourts) * 4
+    val splitIndex = Random.nextInt(randomPlayerList.size)
 
-    // 5. create teams after splitting by index
-    val (playerList1, playerList2) = randomPlayerList.splitAt(randInd)
-    matches = (playerList1 ++ playerList2)
-        .grouped(4)
-        .map { players => players.splitAt(2) }
-        .zipWithIndex
-        .map { case ((team1, team2), ind) =>
-          val courtId = ind + 1
-          Match(
-            team1 = team1.toList,
-            team2 = team2.toList,
-            courtName = "Court " + courtId,
-            courtId = courtId
-          )
-        }.toList
+    // 5. Create chunks of size 4 and size 2
+    val chunks = randomPlayerList.splitAt(splitIndex) match {
+      case (first, second) => {
+        val allChunks = (first.grouped(4).toList ::: second.toList.reverse.grouped(4).toList)
+        val (left, right) = (allChunks.filter(_.size == 4) ::: allChunks.filterNot(_.size == 4).flatten.grouped(4).toList).splitAt(numDoublesCourts)
+        left ::: right.flatten.grouped(2).toList
+      }
+    }
+
+    // 6. Map the chunks into matches
+    matches = chunks
+      .map { players => players.splitAt(players.size/2) }
+      .zipWithIndex
+      .map { case ((team1, team2), ind) =>
+        val courtId = ind + 1
+        Match(
+          team1 = team1.toList,
+          team2 = team2.toList,
+          courtName = "Court " + courtId,
+          courtId = courtId
+        )
+      }
 
     println("***** MATCHES *****")
     matches.foreach(println)
