@@ -37,6 +37,10 @@ object MatchMaker {
     matches
   }
 
+  def getQueue: List[Player] = {
+    playerQ.toList
+  }
+
   def startMatchGeneration(players: List[Player]): Unit = {
     if ( matchMakingTaskHandler.isDefined ) {
       stopMatchGeneration()
