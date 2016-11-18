@@ -14,7 +14,22 @@ package object data {
     type MatchType = Value
     val Singles = Value("Singles")
     val Doubles = Value("Doubles")
+
+    def toSize(matchType: MatchType): Int = {
+      matchType match {
+        case Singles => 2
+        case Doubles => 4
+      }
+    }
+
+    def toType(matchSize: Int): MatchType = {
+      matchSize match {
+        case 2 => Singles
+        case 4 => Doubles
+      }
+    }
   }
+
 
   case class Player(
      id: Int,
@@ -27,7 +42,8 @@ package object data {
     team1: Team,
     team2: Team,
     courtName: String,
-    courtId: Int
+    courtId: Int,
+    courtType: MatchType
   )
 
 }

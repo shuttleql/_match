@@ -14,7 +14,7 @@ class GameServiceServlet extends GameServiceStack with JacksonJsonSupport {
 
   protected implicit val jsonFormats: Formats = DefaultFormats + new EnumNameSerializer(MatchType)
 
-  val conf = ConfigFactory.load();
+  val conf = ConfigFactory.load()
 
   private def getRequest = enrichRequest(request)
   private def getResponse = enrichResponse(response)

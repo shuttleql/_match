@@ -18,8 +18,8 @@ object MatchMaker {
   val rotationTime = clubConfig.getDuration("rotationTime")
   val numCourts = clubConfig.getInt("numCourts")
   val courtTypes = clubConfig.getStringList("courtType").map { s => MatchType.withName(s) }.toList
-  val numDoublesCourts = courtTypes.filter(_ == MatchType.Doubles).length
-  val numSinglesCourts = courtTypes.filter(_ == MatchType.Singles).length
+  val numDoublesCourts = courtTypes.count(_ == MatchType.Doubles)
+  val numSinglesCourts = courtTypes.count(_ == MatchType.Singles)
 
   val matchScheduler = new ScheduledThreadPoolExecutor(1)
   val matchMakingTask = new Runnable {
@@ -74,12 +74,16 @@ object MatchMaker {
   }
 
   def generateMatches(): Unit = {
+    val doublesSize = MatchType.toSize(MatchType.Doubles)
+    val singlesSize = MatchType.toSize(MatchType.Singles)
+
     // 1. Enqueue current players back into queue
     val previousPlayers = matches.flatMap { m => m.team1 ++ m.team2 }
     playerQ ++= previousPlayers
 
     // 2. Dequeue players
-    val poolCount = Math.min(playerQ.length, numDoublesCourts * 4 + numSinglesCourts * 2)
+    val numPlayers = numDoublesCourts * doublesSize + numSinglesCourts * singlesSize
+    val poolCount = Math.min(playerQ.length, numPlayers)
     val currentPlayers = for (i <- 1 to poolCount) yield playerQ.dequeue()
 
     // 3. Shuffle players by level
@@ -95,33 +99,45 @@ object MatchMaker {
     // 5. Create chunks of size 4 and size 2
     val chunks = randomPlayerList.splitAt(splitIndex) match {
       case (first, second) => {
-        val allChunks = first.grouped(4).toList ::: second.toList.reverse.grouped(4).toList
+        val allChunks = first.grouped(doublesSize).toList ::: second.toList.reverse.grouped(doublesSize).toList
         val remainder = allChunks
-          .filterNot(_.size == 4)
+          .filterNot(_.size == doublesSize)
           .flatten
-          .grouped(4)
+          .grouped(doublesSize)
           .toList
-        val (left, right) = (allChunks.filter(_.size == 4) ::: remainder).splitAt(numDoublesCourts)
-        left ::: right.flatten.grouped(2).toList
+        val (left, right) = (allChunks.filter(_.size == doublesSize) ::: remainder).splitAt(numDoublesCourts)
+        left ::: right.flatten.grouped(singlesSize).toList
       }
     }
 
     // 6. Map the chunks into matches
-    matches = chunks
-      .map { players => players.splitAt(players.size/2) }
+    val sortedCourtTypes = courtTypes
       .zipWithIndex
-      .map { case ((team1, team2), ind) =>
-        val courtId = ind + 1
+      .map { case (matchType, ind) =>
+        (ind + 1, MatchType.toSize(matchType))
+      }
+      .sortBy( - _._2)
+
+    val playerTeams = chunks
+      .map { players => players.splitAt(players.size/2) }
+      .padTo(sortedCourtTypes.length, (Iterable(), Iterable()))
+
+    matches = (playerTeams zip sortedCourtTypes)
+      .map { case ((team1, team2), (courtId, courtSize)) =>
         Match(
           team1 = team1.toList,
           team2 = team2.toList,
           courtName = "Court " + courtId,
-          courtId = courtId
+          courtId = courtId,
+          courtType = MatchType.toType(courtSize)
         )
       }
+      .sortBy(_.courtId)
 
     println("***** MATCHES *****")
-    matches.foreach(println)
+    matches.foreach { lol =>
+      println(lol.courtId + ":" + lol.team1.size + "/" + lol.team2.size + "-" + lol.courtType)
+    }
     println("***** PLAYER QUEUE *****")
     playerQ.foreach(println)
   }
