@@ -66,7 +66,9 @@ object MatchMaker {
   }
 
   def checkInPlayer(player: Player): Unit = {
-    playerQ += player
+    if ( matchMakingTaskHandler.isDefined ) {
+      playerQ += player
+    }
   }
 
   def checkOutPlayer(playerId: Int): Unit = {
@@ -94,7 +96,7 @@ object MatchMaker {
       }.values.flatten
 
     // 4. Find random split index
-    val splitIndex = Random.nextInt(randomPlayerList.size)
+    val splitIndex = if (randomPlayerList.nonEmpty) Random.nextInt(randomPlayerList.size) else 0
 
     // 5. Create chunks of size 4 and size 2
     val chunks = randomPlayerList.splitAt(splitIndex) match {
