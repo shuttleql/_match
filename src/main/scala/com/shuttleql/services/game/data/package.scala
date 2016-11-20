@@ -46,4 +46,5 @@ package object data {
     courtType: MatchType
   )
 
+  case class MatchOverrideParams(userId: Int, userId2: Int)
 }

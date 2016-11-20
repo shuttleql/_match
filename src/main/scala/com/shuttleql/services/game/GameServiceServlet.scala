@@ -1,12 +1,12 @@
 package com.shuttleql.services.game
 
-import com.shuttleql.services.game.data.{MatchType, Player}
+import com.shuttleql.services.game.data.{MatchType, Player, MatchOverrideParams}
 import com.shuttleql.services.game.matchmaking.MatchMaker
 import org.json4s.JsonAST.JObject
 import org.json4s.ext.EnumNameSerializer
 import org.scalatra.json._
 import org.json4s.{DefaultFormats, Formats}
-import org.scalatra.{BadRequest, Ok}
+import org.scalatra._
 import com.typesafe.config._
 import com.gandalf.HMACAuth
 
@@ -80,4 +80,16 @@ class GameServiceServlet extends GameServiceStack with JacksonJsonSupport {
     }
   }
 
+  put("/override") {
+    val matchOverride = parsedBody.extract[MatchOverrideParams]
+    val userId = matchOverride.userId
+    val userId2 = matchOverride.userId2
+
+    MatchMaker.swap(userId, userId2) match {
+      case true =>
+        NoContent(reason = "Success")
+      case false =>
+        InternalServerError(reason = "Error with match override.")
+    }
+  }
 }
