@@ -9,9 +9,6 @@ import scala.util.Random
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 
-/**
-  * Created by jasonf7 on 2016-10-15.
-  */
 object MatchMaker {
 
   val clubConfig = ConfigFactory.load().getConfig("clubConf")
@@ -25,13 +22,13 @@ object MatchMaker {
   val matchMakingTask = new Runnable {
     override def run(): Unit = {
       generateMatches()
-      // TODO: call notification service
     }
   }
   var matchMakingTaskHandler: Option[ScheduledFuture[_]] = None
 
   var matches: List[Match] = List()
   var playerQ: mutable.Queue[Player] = mutable.Queue()
+  var lastRotationTime = System.currentTimeMillis() / 1000
 
   def getMatches: List[Match] = {
     matches
@@ -39,6 +36,11 @@ object MatchMaker {
 
   def getQueue: List[Player] = {
     playerQ.toList
+  }
+
+  def getRotationTimeLeft: Long = {
+    val currentTime = System.currentTimeMillis() / 1000
+    Math.max(0, rotationTime.getSeconds - (currentTime - lastRotationTime))
   }
 
   def startMatchGeneration(players: List[Player]): Unit = {
@@ -232,6 +234,8 @@ object MatchMaker {
     }
     println("***** PLAYER QUEUE *****")
     playerQ.foreach(println)
+
+    lastRotationTime = System.currentTimeMillis() / 1000
   }
 
 }
