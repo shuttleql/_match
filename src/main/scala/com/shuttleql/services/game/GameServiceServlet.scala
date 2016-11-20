@@ -2,7 +2,6 @@ package com.shuttleql.services.game
 
 import com.shuttleql.services.game.data.{MatchType, Player, MatchOverrideParams}
 import com.shuttleql.services.game.matchmaking.MatchMaker
-import org.json4s.JsonAST.JObject
 import org.json4s.ext.EnumNameSerializer
 import org.scalatra.json._
 import org.json4s.{DefaultFormats, Formats}
@@ -24,7 +23,7 @@ class GameServiceServlet extends GameServiceStack with JacksonJsonSupport {
     contentType = formats("json")
   }
 
-  def auth() {
+  def auth =  {
     val token = getRequest.header("Authorization")
     val key = getRequest.header("Authorization-Key")
     val secret = conf.getString("secrets.hmac_secret")
@@ -35,7 +34,7 @@ class GameServiceServlet extends GameServiceStack with JacksonJsonSupport {
         split.length match {
           case 2 =>
             HMACAuth.validateHost(split(1), k, secret) match {
-              case true => return
+              case true => true
               case false =>
                 halt(status=401, reason="Forbidden");
             }
@@ -50,20 +49,21 @@ class GameServiceServlet extends GameServiceStack with JacksonJsonSupport {
   get("/") {
     Ok(Map(
       "matches" -> MatchMaker.getMatches,
-      "queue" -> MatchMaker.getQueue
+      "queue" -> MatchMaker.getQueue,
+      "timeLeft" -> MatchMaker.getRotationTimeLeft
     ))
   }
 
   post("/checkedinplayers") {
     val player = parsedBody.extract[Player]
     MatchMaker.checkInPlayer(player)
-    Ok(JObject(obj = List()))
+    NoContent(reason = "Success")
   }
 
   delete("/checkedinplayers/:id") {
     val playerId = params("id").toInt
     MatchMaker.checkOutPlayer(playerId)
-    Ok(JObject(obj = List()))
+    NoContent(reason = "Success")
   }
 
   put("/status/:status") {
@@ -71,10 +71,10 @@ class GameServiceServlet extends GameServiceStack with JacksonJsonSupport {
       case "start" =>
         val playerList = parsedBody.extract[List[Player]]
         MatchMaker.startMatchGeneration(players = playerList)
-        Ok(JObject(obj = List()))
+        NoContent(reason = "Success")
       case "stop" =>
         MatchMaker.stopMatchGeneration()
-        Ok(JObject(obj = List()))
+        NoContent(reason = "Success")
       case badStatus =>
         BadRequest(reason = "Invalid status type: " + badStatus)
     }
