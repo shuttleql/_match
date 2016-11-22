@@ -59,12 +59,13 @@ object MatchMaker {
       stopMatchGeneration()
     }
 
+    lastRotationTime = System.currentTimeMillis()
     playerQ ++= players
 
     matchMakingTaskHandler = Option(
       matchScheduler.scheduleAtFixedRate(
         matchMakingTask,
-        3,
+        0,
         rotationTime.getSeconds,
         TimeUnit.SECONDS
       )
