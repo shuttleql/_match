@@ -86,11 +86,13 @@ object MatchMaker {
   def checkInPlayer(player: Player): Unit = {
     if ( matchMakingTaskHandler.isDefined ) {
       playerQ += player
+      broadcastMatchUpdate
     }
   }
 
   def checkOutPlayer(playerId: Int): Unit = {
     playerQ = playerQ.filterNot(player => player.id == playerId)
+    broadcastMatchUpdate
   }
 
   def broadcastMatchUpdate(): Unit = {
@@ -161,6 +163,8 @@ object MatchMaker {
       // 3. Player 2 is in a match, player 1 is in the queue
       swapPlayerInMatchAndQueue(userId2, userId, match2Index)
     }
+
+    broadcastMatchUpdate
 
     true
   }
