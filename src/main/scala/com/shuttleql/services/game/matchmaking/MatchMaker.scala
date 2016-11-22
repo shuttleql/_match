@@ -37,7 +37,7 @@ object MatchMaker {
 
   var matches: List[Match] = List()
   var playerQ: mutable.Queue[Player] = mutable.Queue()
-  var lastRotationTime = System.currentTimeMillis() / 1000
+  var lastRotationTime = System.currentTimeMillis()
 
   def getMatches: List[Match] = {
     matches
@@ -47,9 +47,11 @@ object MatchMaker {
     playerQ.toList
   }
 
-  def getRotationTimeLeft: Long = {
-    val currentTime = System.currentTimeMillis() / 1000
-    Math.max(0, rotationTime.getSeconds - (currentTime - lastRotationTime))
+  def getNextRotationTime: Option[Long] = {
+    matchMakingTaskHandler match {
+      case Some(hello) => Some(lastRotationTime + rotationTime.getSeconds * 1000)
+      case None => None
+    }
   }
 
   def startMatchGeneration(players: List[Player]): Unit = {
@@ -159,7 +161,7 @@ object MatchMaker {
       swapPlayerInMatchAndQueue(userId2, userId, match2Index)
     }
 
-    return true
+    true
   }
 
   def swapPlayerInMatchAndQueue(userId: Int, userId2: Int, matchIndex: Int) {
@@ -258,7 +260,7 @@ object MatchMaker {
     playerQ.foreach(println)
 
     broadcastMatchUpdate()
-    lastRotationTime = System.currentTimeMillis() / 1000
+    lastRotationTime = System.currentTimeMillis()
   }
 
 }
