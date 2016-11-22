@@ -31,13 +31,13 @@ object MatchMaker {
   val matchMakingTask = new Runnable {
     override def run(): Unit = {
       generateMatches()
-      // TODO: call notification service
     }
   }
   var matchMakingTaskHandler: Option[ScheduledFuture[_]] = None
 
   var matches: List[Match] = List()
   var playerQ: mutable.Queue[Player] = mutable.Queue()
+  var lastRotationTime = System.currentTimeMillis() / 1000
 
   def getMatches: List[Match] = {
     matches
@@ -45,6 +45,11 @@ object MatchMaker {
 
   def getQueue: List[Player] = {
     playerQ.toList
+  }
+
+  def getRotationTimeLeft: Long = {
+    val currentTime = System.currentTimeMillis() / 1000
+    Math.max(0, rotationTime.getSeconds - (currentTime - lastRotationTime))
   }
 
   def startMatchGeneration(players: List[Player]): Unit = {
@@ -92,6 +97,96 @@ object MatchMaker {
       .withMessage("{ \"resource\": \"matches\" }")
 
     snsClient.publish(publishReq)
+  }
+
+  def swap(userId: Int, userId2: Int): Boolean = {
+    val match1Index = matches.indexWhere(court => court.team1.exists(x => x.id == userId) || court.team2.exists(x => x.id == userId))
+    val match2Index = matches.indexWhere(court => court.team1.exists(x => x.id == userId2) || court.team2.exists(x => x.id == userId2))
+
+    // Both players are in the queue
+    if (match1Index == -1 && match2Index == -1) {
+      return false
+    }
+
+    // 1. Both players are in a match
+    if (match1Index != -1 && match2Index != -1) {
+      val splitIndex = Math.min(match1Index, match2Index) 
+      val splitIndex2 = Math.max(match1Index, match2Index) 
+
+      val split1 = if (splitIndex != 0) matches.slice(0, splitIndex) else List()
+      val split2 = if (splitIndex + 1 != splitIndex2) matches.slice(splitIndex + 1, splitIndex2) else List()
+      val split3 = if (splitIndex2 + 1 != matches.length) matches.slice(splitIndex2 + 1, matches.length) else List()
+
+      val match1 = matches(match1Index)
+      val match2 = matches(match2Index)
+
+      val player1: Player = (match1.team1 ++ match1.team2).find(x => x.id == userId).get
+      val player2: Player = (match2.team1 ++ match2.team2).find(x => x.id == userId2).get
+
+      val newMatch1 = Match(
+        team1 = match1.team1.map { player =>
+          if (player == player1) player2 else player
+        },
+        team2 = match1.team2.map { player =>
+          if (player == player1) player2 else player
+        },
+        courtName = match1.courtName,
+        courtId = match1.courtId,
+        courtType = match1.courtType
+      )
+
+      val newMatch2 = Match(
+        team1 = match2.team1.map { player =>
+          if (player == player2) player1 else player
+        },
+        team2 = match2.team2.map { player =>
+          if (player == player2) player1 else player
+        },
+        courtName = match2.courtName,
+        courtId = match2.courtId,
+        courtType = match2.courtType
+      )
+
+      val firstMatch = if (match2Index < match1Index) newMatch2 else newMatch1
+      val secondMatch = if (match2Index > match1Index) newMatch2 else newMatch1
+
+      matches = (split1 :+ firstMatch) ++ (split2 :+ secondMatch) ++ split3
+    } else if (match1Index != -1 && match2Index == -1) {
+      // 2. Player 1 is in a match, player 2 is in the queue
+      swapPlayerInMatchAndQueue(userId, userId2, match1Index)
+    } else if (match1Index == -1 && match2Index != -1) {
+      // 3. Player 2 is in a match, player 1 is in the queue
+      swapPlayerInMatchAndQueue(userId2, userId, match2Index)
+    }
+
+    return true
+  }
+
+  def swapPlayerInMatchAndQueue(userId: Int, userId2: Int, matchIndex: Int) {
+    val split1 = if (matchIndex != 0) matches.slice(0, matchIndex) else List()
+    val split2 = if (matchIndex + 1 != matches.length) matches.slice(matchIndex + 1, matches.length) else List()
+
+    val court = matches(matchIndex)
+    val player1: Player = (court.team1 ++ court.team2).find(x => x.id == userId).get
+    val player2: Player = playerQ.find(x => x.id == userId2).get
+
+    val newMatch = Match(
+      team1 = court.team1.map { player =>
+        if (player == player1) player2 else player
+      },
+      team2 = court.team2.map { player =>
+        if (player == player1) player2 else player
+      },
+      courtName = court.courtName,
+      courtId = court.courtId,
+      courtType = court.courtType
+    )
+
+    matches = (split1 :+ newMatch) ++ split2
+    var newPlayerQ: mutable.Queue[Player] = mutable.Queue()
+    newPlayerQ.enqueue(player1)
+    newPlayerQ ++= playerQ.filter(x => x.id != userId2)
+    playerQ = newPlayerQ
   }
 
   def generateMatches(): Unit = {
@@ -163,6 +258,7 @@ object MatchMaker {
     playerQ.foreach(println)
 
     broadcastMatchUpdate()
+    lastRotationTime = System.currentTimeMillis() / 1000
   }
 
 }
