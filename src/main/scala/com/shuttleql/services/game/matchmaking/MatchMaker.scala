@@ -2,14 +2,23 @@ package com.shuttleql.services.game.matchmaking
 
 import java.util.concurrent.{ScheduledFuture, ScheduledThreadPoolExecutor, TimeUnit}
 
+import com.amazonaws.auth.BasicAWSCredentials
+import com.amazonaws.regions.{Region, Regions}
 import com.shuttleql.services.game.data.{Match, MatchType, Player}
 import com.typesafe.config.ConfigFactory
 
 import scala.util.Random
 import scala.collection.JavaConversions._
 import scala.collection.mutable
+import com.amazonaws.services.sns.AmazonSNSClient
+import com.amazonaws.services.sns.model.PublishRequest
 
 object MatchMaker {
+  val conf = ConfigFactory.load()
+
+  val creds = new BasicAWSCredentials(conf.getString("amazon.access_key"), conf.getString("amazon.secret_key"))
+  val snsClient = new AmazonSNSClient(creds)
+  snsClient.setRegion(Region.getRegion(Regions.US_WEST_2))
 
   val clubConfig = ConfigFactory.load().getConfig("clubConf")
   val rotationTime = clubConfig.getDuration("rotationTime")
@@ -58,6 +67,8 @@ object MatchMaker {
         TimeUnit.SECONDS
       )
     )
+
+    println("Matchmaking started.")
   }
 
   def stopMatchGeneration(): Unit = {
@@ -65,6 +76,8 @@ object MatchMaker {
     matchMakingTaskHandler = None
     matches = List()
     playerQ.clear()
+
+    println("Matchmaking stopped.")
   }
 
   def checkInPlayer(player: Player): Unit = {
@@ -75,6 +88,15 @@ object MatchMaker {
 
   def checkOutPlayer(playerId: Int): Unit = {
     playerQ = playerQ.filterNot(player => player.id == playerId)
+  }
+
+  def broadcastMatchUpdate(): Unit = {
+    val publishReq = new PublishRequest()
+      .withTopicArn(conf.getString("amazon.topic_arn"))
+      .withSubject("update")
+      .withMessage("{ \"resource\": \"matches\" }")
+
+    snsClient.publish(publishReq)
   }
 
   def swap(userId: Int, userId2: Int): Boolean = {
@@ -235,6 +257,7 @@ object MatchMaker {
     println("***** PLAYER QUEUE *****")
     playerQ.foreach(println)
 
+    broadcastMatchUpdate()
     lastRotationTime = System.currentTimeMillis() / 1000
   }
 
