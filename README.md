@@ -1,4 +1,4 @@
-# Game Service #
+# Match (Game) Service #
 
 ## Install sbt ##
 ```sh
